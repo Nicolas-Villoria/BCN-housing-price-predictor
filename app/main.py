@@ -38,10 +38,6 @@ def main():
         if features is None:
             st.info("👈 Please configure the property details in the form to get a valuation.")
             
-            # Show global explanations or hero image here
-            if os.path.exists("reports/feature_importance.png"):
-                st.image("reports/feature_importance.png", caption="Global Feature Importance (What drives prices?)")
-            
         else:
             if spark is None:
                 st.error("Spark engine failed to initialize. Check logs.")
