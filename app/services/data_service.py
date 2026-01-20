@@ -1,0 +1,107 @@
+import pandas as pd
+import streamlit as st
+import os
+
+# Paths to data
+LOOKUP_PATH = "datasets/lookup_tables/idealista_extended.csv"
+INCOME_PATH = "data_lake/silver/income_clean.csv"
+DENSITY_PATH = "data_lake/silver/density_clean.csv"
+
+@st.cache_data
+def load_lookup_table():
+    """Loads the Neighborhood <-> District mapping table."""
+    if not os.path.exists(LOOKUP_PATH):
+        st.error(f"Lookup table not found at {LOOKUP_PATH}")
+        return pd.DataFrame()
+    return pd.read_csv(LOOKUP_PATH)
+
+@st.cache_data
+def load_socioeconomic_data():
+    """
+    Loads Income and Density data to create a lookup dictionary for model features.
+    Returns:
+        dict: {neighborhood_id: {'income': val, 'density': val}}
+    """
+    data_map = {}
+    
+    def get_csv_from_path(path):
+        """Helper to handle Spark 'directory' CSVs or normal files."""
+        if not os.path.exists(path):
+            return None
+        if os.path.isdir(path):
+            # Find the part-*.csv file
+            for f in os.listdir(path):
+                if f.startswith("part-") and f.endswith(".csv"):
+                    return os.path.join(path, f)
+            return None
+        return path
+
+    # Load Income
+    income_file = get_csv_from_path(INCOME_PATH)
+    if income_file:
+        try:
+            df_income = pd.read_csv(income_file)
+            # Get latest year per neighborhood
+            # Assuming higher year is better. 
+            # We need avg_income_index. The silver file has 'income' column. 
+            # In exploitation zone, we used 'income' as 'avg_income_index'.
+            for _, row in df_income.iterrows():
+                n_id = row['neighborhood_id']
+                # Simple overwriting with latest/last seen value. 
+                # Ideally we pick specific year, but for now latest is fine.
+                if n_id not in data_map:
+                    data_map[n_id] = {}
+                data_map[n_id]['income'] = row['income']
+        except Exception as e:
+            print(f"Error loading income data: {e}")
+            
+    # Load Density
+    density_file = get_csv_from_path(DENSITY_PATH)
+    if density_file:
+        try:
+            df_density = pd.read_csv(density_file)
+            for _, row in df_density.iterrows():
+                n_id = row['neighborhood_id']
+                if n_id not in data_map:
+                    data_map[n_id] = {}
+                data_map[n_id]['density'] = row['density_val']
+        except Exception as e:
+             print(f"Error loading density data: {e}")
+            
+    return data_map
+
+def get_districts():
+    """Returns unique districts."""
+    df = load_lookup_table()
+    if df.empty: return []
+    return sorted(df['district'].unique().tolist())
+
+def get_neighborhoods(district):
+    """Returns neighborhoods for a given district."""
+    df = load_lookup_table()
+    if df.empty: return []
+    filtered = df[df['district'] == district]
+    return sorted(filtered['neighborhood'].unique().tolist())
+
+def get_neighborhood_id(neighborhood_name):
+    """Returns ID for a neighborhood name."""
+    df = load_lookup_table()
+    if df.empty: return None
+    row = df[df['neighborhood'] == neighborhood_name]
+    if not row.empty:
+        return row.iloc[0]['neighborhood_id']
+    return None
+
+def get_district_from_neighborhood(neighborhood_name):
+    """Returns district for a neighborhood name."""
+    df = load_lookup_table()
+    if df.empty: return None
+    row = df[df['neighborhood'] == neighborhood_name]
+    if not row.empty:
+        return row.iloc[0]['district']
+    return None
+
+def get_socio_metrics(neighborhood_id):
+    """Returns income and density for a neighborhood ID."""
+    data = load_socioeconomic_data()
+    return data.get(neighborhood_id, {'income': 0, 'density': 0})
