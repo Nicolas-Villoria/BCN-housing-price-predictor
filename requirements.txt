@@ -40,6 +40,7 @@ numpy>=1.26.0                      # Numerical computing library
 # ------------------------------------------------------------------------------
 matplotlib>=3.8.2                  # Core plotting and visualization library
 seaborn>=0.13.0                    # Statistical data visualization (built on matplotlib)
+streamlit>=1.28.0                  # Web application framework
 
 # ------------------------------------------------------------------------------
 # WORKFLOW ORCHESTRATION
