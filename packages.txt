@@ -1,1 +1,1 @@
-openjdk-11-jdk-headless
+openjdk-17-jdk-headless
