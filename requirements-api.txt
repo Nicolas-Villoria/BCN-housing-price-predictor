@@ -1,0 +1,20 @@
+# ==============================================================================
+# API-only Dependencies (Minimal for Production Container)
+# ==============================================================================
+# This file contains only the dependencies needed to run the FastAPI service
+# Use this for Docker builds to minimize image size
+# ==============================================================================
+
+# Core API framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+
+# ML inference (sklearn only, no Spark)
+scikit-learn>=1.3.2
+numpy>=1.26.0
+pandas>=2.1.4
+joblib>=1.3.0
+
+# HTTP client for health checks
+httpx>=0.26.0

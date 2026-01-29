@@ -1,0 +1,40 @@
+# ==============================================================================
+# Docker Compose - Local Development
+# ==============================================================================
+# Usage:
+#   docker compose up        # Start API
+#   docker compose up -d     # Start in background
+#   docker compose down      # Stop and remove
+#   docker compose logs -f   # View logs
+# ==============================================================================
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bcn-rental-api:latest
+    container_name: bcn-rental-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    
+    # Resource limits (optional, for production)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 512M

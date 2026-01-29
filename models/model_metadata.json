@@ -1,0 +1,33 @@
+{
+  "version": "20260127_181012",
+  "model_type": "RandomForest",
+  "metrics": {
+    "rmse": 116745.84,
+    "r2": 0.9063,
+    "mae": 62198.75
+  },
+  "feature_names": [
+    "size",
+    "rooms",
+    "bathrooms",
+    "avg_income_index",
+    "density_val",
+    "neighborhood_encoded",
+    "propertyType_encoded",
+    "district_encoded"
+  ],
+  "numeric_features": [
+    "size",
+    "rooms",
+    "bathrooms",
+    "avg_income_index",
+    "density_val"
+  ],
+  "categorical_features": [
+    "neighborhood",
+    "propertyType",
+    "district"
+  ],
+  "training_date": "2026-01-27T18:10:12.667997",
+  "threshold_passed": true
+}
