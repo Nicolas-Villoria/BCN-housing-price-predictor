@@ -1,0 +1,20 @@
+# ==============================================================================
+# Streamlit Cloud - Lightweight Dependencies
+# ==============================================================================
+# 
+# This requirements file is for deploying the Streamlit frontend to Streamlit Cloud.
+# It uses the cloud-deployed API for predictions, so no Spark/MLflow needed.
+#
+# ==============================================================================
+
+# Core Framework
+streamlit>=1.28.0
+
+# API Client
+httpx>=0.26.0
+
+# Data handling (for lookup tables only)
+pandas>=2.1.4
+
+# Environment variables
+python-dotenv>=1.0.0

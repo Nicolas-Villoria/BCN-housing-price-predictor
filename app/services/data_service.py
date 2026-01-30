@@ -2,10 +2,13 @@ import pandas as pd
 import streamlit as st
 import os
 
-# Paths to data
-LOOKUP_PATH = "datasets/lookup_tables/idealista_extended.csv"
-INCOME_PATH = "data_lake/silver/income_clean.csv"
-DENSITY_PATH = "data_lake/silver/density_clean.csv"
+# Get project root directory (two levels up from this file: app/services/ -> app/ -> project_root/)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Paths to data (using absolute paths based on project root)
+LOOKUP_PATH = os.path.join(PROJECT_ROOT, "datasets/lookup_tables/idealista_extended.csv")
+INCOME_PATH = os.path.join(PROJECT_ROOT, "data_lake/silver/income_clean.csv")
+DENSITY_PATH = os.path.join(PROJECT_ROOT, "data_lake/silver/density_clean.csv")
 
 @st.cache_data
 def load_lookup_table():

@@ -1,5 +1,6 @@
 .mypy_cache/
 venv/
+.venv/
 # data_lake/
 # mlruns/
 reports/
@@ -15,3 +16,13 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
