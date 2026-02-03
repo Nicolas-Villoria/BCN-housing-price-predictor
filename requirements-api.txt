@@ -15,3 +15,6 @@ joblib>=1.3.0
 
 # HTTP client for health checks
 httpx>=0.26.0
+
+# AWS S3 for model artifact storage
+boto3>=1.34.0
