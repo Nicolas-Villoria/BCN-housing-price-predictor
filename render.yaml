@@ -1,8 +1,5 @@
 # ==============================================================================
-# Render.com Deployment Configuration
-# ==============================================================================
-# Deploy via: https://dashboard.render.com/select-repo?type=web
-# Select this repo and Render will auto-detect this file
+# Render Deployment Configuration
 # ==============================================================================
 
 services:
@@ -30,5 +27,3 @@ services:
     # Free tier settings
     plan: free
     
-    # Region (optional - defaults to Oregon)
-    # region: oregon

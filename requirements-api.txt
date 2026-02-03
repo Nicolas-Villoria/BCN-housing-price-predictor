@@ -1,8 +1,5 @@
 # ==============================================================================
-# API-only Dependencies (Minimal for Production Container)
-# ==============================================================================
-# This file contains only the dependencies needed to run the FastAPI service
-# Use this for Docker builds to minimize image size
+# API Dependencies 
 # ==============================================================================
 
 # Core API framework

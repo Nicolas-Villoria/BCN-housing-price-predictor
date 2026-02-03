@@ -48,6 +48,13 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 # Import FeatureTransformer from separate module for proper serialization
 from feature_transformer import FeatureTransformer, NUMERIC_FEATURES, CATEGORICAL_FEATURES
 
+# Import model versioning
+try:
+    from model_versioning import ModelVersionManager
+    VERSIONING_AVAILABLE = True
+except ImportError:
+    VERSIONING_AVAILABLE = False
+
 # MLflow (optional - for experiment tracking)
 try:
     import mlflow
@@ -371,7 +378,9 @@ def save_model_artifacts(
     model,
     transformer: FeatureTransformer,
     metrics: dict,
-    output_dir: Path
+    output_dir: Path,
+    training_samples: int = 0,
+    data_path: Path = None
 ):
     """
     Save all model artifacts needed for production inference.
@@ -379,7 +388,7 @@ def save_model_artifacts(
     Artifacts:
     - champion_model.pkl: The trained sklearn model
     - feature_transformer.pkl: Fitted preprocessing pipeline
-    - model_metadata.json: Version, metrics, feature names
+    - model_metadata.json: Version, metrics, feature names (with MLOps metadata)
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -393,21 +402,39 @@ def save_model_artifacts(
     joblib.dump(transformer, transformer_path)
     print(f"✓ Transformer saved: {transformer_path}")
     
-    # Save metadata
-    metadata = {
-        "version": datetime.now().strftime("%Y%m%d_%H%M%S"),
-        "model_type": metrics["name"],
-        "metrics": {
-            "rmse": round(metrics["rmse"], 2),
-            "r2": round(metrics["r2"], 4),
-            "mae": round(metrics.get("mae", 0), 2)
-        },
-        "feature_names": transformer.get_feature_names(),
-        "numeric_features": NUMERIC_FEATURES,
-        "categorical_features": CATEGORICAL_FEATURES,
-        "training_date": datetime.now().isoformat(),
-        "threshold_passed": metrics["rmse"] < RMSE_THRESHOLD and metrics["r2"] > R2_THRESHOLD
-    }
+    # Create metadata with enhanced versioning if available
+    if VERSIONING_AVAILABLE:
+        version_manager = ModelVersionManager()
+        metadata = version_manager.create_version_metadata(
+            model_type=metrics["name"],
+            metrics=metrics,
+            training_samples=training_samples,
+            data_path=data_path,
+            bump="patch",
+            description=f"Auto-trained {metrics['name']} model",
+            tags=["auto-trained"]
+        )
+        # Add feature information
+        metadata["feature_names"] = transformer.get_feature_names()
+        metadata["numeric_features"] = NUMERIC_FEATURES
+        metadata["categorical_features"] = CATEGORICAL_FEATURES
+        print(f" Enhanced versioning: v{metadata['semantic_version']}")
+    else:
+        # Fallback to basic metadata
+        metadata = {
+            "version": datetime.now().strftime("%Y%m%d_%H%M%S"),
+            "model_type": metrics["name"],
+            "metrics": {
+                "rmse": round(metrics["rmse"], 2),
+                "r2": round(metrics["r2"], 4),
+                "mae": round(metrics.get("mae", 0), 2)
+            },
+            "feature_names": transformer.get_feature_names(),
+            "numeric_features": NUMERIC_FEATURES,
+            "categorical_features": CATEGORICAL_FEATURES,
+            "training_date": datetime.now().isoformat(),
+            "threshold_passed": metrics["rmse"] < RMSE_THRESHOLD and metrics["r2"] > R2_THRESHOLD
+        }
     
     metadata_path = output_dir / "model_metadata.json"
     with open(metadata_path, 'w') as f:
@@ -497,7 +524,14 @@ def main():
     
     # Save artifacts
     print("\nSaving model artifacts...")
-    metadata = save_model_artifacts(best["model"], transformer, best, MODELS_DIR)
+    metadata = save_model_artifacts(
+        best["model"], 
+        transformer, 
+        best, 
+        MODELS_DIR,
+        training_samples=len(X_train_raw),
+        data_path=DATA_PATH
+    )
     
     # Generate visualizations
     print("\nGenerating reports...")

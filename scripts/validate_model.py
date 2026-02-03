@@ -255,7 +255,7 @@ def validate_model(
     }
     
     # Print results
-    print("\n📊 VALIDATION METRICS:")
+    print("\n VALIDATION METRICS:")
     print("-" * 40)
     print(f"  RMSE:  €{metrics['rmse']:,.2f}  (threshold: €{rmse_threshold:,.0f})")
     print(f"  R²:    {metrics['r2']:.4f}      (threshold: {r2_threshold})")
@@ -263,7 +263,7 @@ def validate_model(
     print(f"  MAPE:  {metrics['mape']:.2f}%")
     print(f"  Samples: {metrics['n_samples']:,}")
     
-    print("\n✅ THRESHOLD CHECKS:")
+    print("\n THRESHOLD CHECKS:")
     print("-" * 40)
     
     all_passed = True
@@ -368,7 +368,7 @@ def main():
         model_dir = Path(args.model_path)
         model, transformer, metadata = load_model_artifacts(model_dir)
         
-        print(f"\n📦 Model Version: {metadata.get('version', 'unknown')}")
+        print(f"\n Model Version: {metadata.get('version', 'unknown')}")
         print(f"   Model Type: {metadata.get('model_type', 'unknown')}")
         print(f"   Training Date: {metadata.get('training_date', 'unknown')}")
         

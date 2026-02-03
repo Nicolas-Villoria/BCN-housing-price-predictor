@@ -1,11 +1,6 @@
 # ==============================================================================
-# Barcelona Rental Price Estimation - Big Data Analytics Project
+# Barcelona Sale Price Estimation - Requirements File
 # Python Dependencies
-# ==============================================================================
-# 
-# Installation: pip install -r requirements.txt
-# Python Version: 3.9-3.12 (tested on 3.9, 3.10, 3.11, 3.12)
-#
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
