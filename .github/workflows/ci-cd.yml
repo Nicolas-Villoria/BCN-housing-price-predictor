@@ -225,8 +225,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME || 'bcn-rental-models' }}
+          AWS_REGION: ${{ secrets.AWS_REGION || 'eu-north-1' }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME || 'bcn-sale-models' }}
         run: |
           python scripts/s3_storage.py sync
         continue-on-error: true  # Don't fail deploy if S3 backup fails
