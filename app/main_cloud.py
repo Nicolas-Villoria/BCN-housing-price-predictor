@@ -117,7 +117,7 @@ def main():
         }
         
         # Call the API
-        with st.spinner("Analyzing market data..."):
+        with st.spinner(" Waking up backend and generating prediction..."):
             client = get_api_client()
             response = client.predict(features)
         
