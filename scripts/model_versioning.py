@@ -1,6 +1,4 @@
 """
-model_versioning.py
------------------------
 Enhanced Model Versioning for MLOps
 
 This module provides comprehensive model versioning with:
@@ -10,16 +8,6 @@ This module provides comprehensive model versioning with:
 - Environment fingerprinting
 - Deployment history
 - Model lineage (parent version tracking)
-
-Usage:
-    from model_versioning import ModelVersionManager
-    
-    manager = ModelVersionManager()
-    metadata = manager.create_version_metadata(
-        model=trained_model,
-        metrics={"rmse": 100000, "r2": 0.90},
-        model_type="RandomForest"
-    )
 """
 
 import hashlib
@@ -49,13 +37,6 @@ VERSION_REGISTRY_PATH = MODELS_DIR / "version_registry.json"
 class ModelVersionManager:
     """
     Manages model versioning with comprehensive metadata tracking.
-    
-    Features:
-    - Semantic versioning with auto-increment
-    - Git integration for commit tracking
-    - Data fingerprinting
-    - Environment capture
-    - Deployment history
     """
     
     def __init__(self, models_dir: Path = MODELS_DIR):
@@ -85,9 +66,6 @@ class ModelVersionManager:
     def get_git_info(self) -> dict:
         """
         Get current git repository information.
-        
-        Returns:
-            Dict with commit hash, branch, author, and dirty status
         """
         git_info = {
             "commit_hash": None,
@@ -156,9 +134,6 @@ class ModelVersionManager:
     def get_environment_info(self) -> dict:
         """
         Capture current environment information.
-        
-        Returns:
-            Dict with Python version, OS, and key package versions
         """
         env_info = {
             "python_version": platform.python_version(),
@@ -186,12 +161,6 @@ class ModelVersionManager:
     def compute_data_hash(self, data_path: Path) -> Optional[str]:
         """
         Compute a hash of the training data for lineage tracking.
-        
-        Args:
-            data_path: Path to data directory or file
-            
-        Returns:
-            SHA256 hash of the data
         """
         try:
             hasher = hashlib.sha256()
@@ -215,12 +184,6 @@ class ModelVersionManager:
     def get_next_version(self, bump: str = "patch") -> str:
         """
         Calculate the next semantic version.
-        
-        Args:
-            bump: One of "major", "minor", "patch"
-            
-        Returns:
-            Next version string (e.g., "1.2.4")
         """
         current = self.registry.get("current_version", "0.0.0")
         parts = [int(x) for x in current.split(".")]

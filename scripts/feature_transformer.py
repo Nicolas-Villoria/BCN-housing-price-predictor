@@ -1,9 +1,5 @@
 """
 Feature Transformer for Barcelona Rental Price Model
-
-This module contains the FeatureTransformer class used for preprocessing
-input data before model inference. It must be importable for joblib to
-deserialize the saved transformer.
 """
 
 import numpy as np
@@ -19,11 +15,8 @@ CATEGORICAL_FEATURES = ["neighborhood", "propertyType", "district"]
 class FeatureTransformer:
     """
     Custom feature transformer that handles both numeric and categorical features.
-    
-    This class encapsulates all preprocessing logic, making it easy to:
-    - Save/load the fitted transformer
-    - Apply consistent preprocessing in training and inference
-    - Expose feature names for explainability
+    Helps ensure consistent preprocessing between training and inference, 
+    and provides feature names for explainability.
     """
     
     def __init__(self):

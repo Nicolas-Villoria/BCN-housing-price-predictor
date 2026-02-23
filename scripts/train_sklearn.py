@@ -1,22 +1,5 @@
 """
-train_sklearn.py
------------------------
 Production-Ready sklearn Training Pipeline
-
-This script replaces the PySpark-based ml_training.py for production deployment.
-It produces a lightweight, portable model that can be served via FastAPI without JVM overhead.
-
-Key Differences from Spark Version:
-- Uses pandas + sklearn instead of PySpark MLlib
-- Model serialized as joblib (fast load, no Java dependency)
-- Identical feature engineering logic for consistency
-- Suitable for datasets that fit in memory (< 1GB)
-
-Output Artifacts:
-- models/champion_model.pkl       : Best trained model
-- models/feature_transformer.pkl  : Preprocessing pipeline (encoders + scaler)
-- models/model_metadata.json      : Version, metrics, feature names
-- reports/                        : Visualization artifacts
 """
 
 import os
@@ -32,15 +15,12 @@ import joblib
 
 # Visualization
 import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend for CI/CD
+matplotlib.use('Agg')  
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # sklearn
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
@@ -49,20 +29,13 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from feature_transformer import FeatureTransformer, NUMERIC_FEATURES, CATEGORICAL_FEATURES
 
 # Import model versioning
-try:
-    from model_versioning import ModelVersionManager
-    VERSIONING_AVAILABLE = True
-except ImportError:
-    VERSIONING_AVAILABLE = False
+from model_versioning import ModelVersionManager
 
-# MLflow (optional - for experiment tracking)
-try:
-    import mlflow
-    import mlflow.sklearn
-    MLFLOW_AVAILABLE = True
-except ImportError:
-    MLFLOW_AVAILABLE = False
-    print("MLflow not available. Metrics will be logged locally only.")
+
+# MLflow 
+import mlflow
+import mlflow.sklearn
+    
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -72,7 +45,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
-DATA_PATH = PROJECT_ROOT / "data_lake" / "gold" / "property_prices_csv"
+DATA_PATH = PROJECT_ROOT / "data_lake" / "gold" / "property_prices"
 MODELS_DIR = PROJECT_ROOT / "models"
 REPORT_DIR = PROJECT_ROOT / "reports"
 
@@ -94,39 +67,18 @@ TARGET = "price"
 
 def load_gold_data() -> pd.DataFrame:
     """
-    Load the Gold layer data from CSV files.
-    
-    The Gold layer is produced by exploitation_zone.py and contains
-    the final feature-engineered dataset ready for ML training.
-    
-    Returns:
-        pd.DataFrame: Combined dataset from all available CSV partitions
+    Load the Gold layer data from Parquet files.
     """
-    # Find the latest execution date folder
-    csv_folders = sorted([f for f in DATA_PATH.iterdir() if f.is_dir()])
+    parquet_files = list(DATA_PATH.rglob("*.parquet"))
     
-    if not csv_folders:
-        raise FileNotFoundError(f"No data found in {DATA_PATH}. Run exploitation_zone.py first.")
+    if not parquet_files:
+        raise FileNotFoundError(
+            f"No Parquet files found in {DATA_PATH}. Run exploitation_zone.py first."
+        )
     
-    latest_folder = csv_folders[-1]
-    print(f"Loading data from: {latest_folder}")
-    
-    # Read all CSV parts (Spark writes multiple part files)
-    csv_files = list(latest_folder.glob("*.csv"))
-    
-    if not csv_files:
-        raise FileNotFoundError(f"No CSV files found in {latest_folder}")
-    
-    dfs = []
-    for f in csv_files:
-        try:
-            df = pd.read_csv(f)
-            dfs.append(df)
-        except Exception as e:
-            print(f"Warning: Could not read {f}: {e}")
-    
-    data = pd.concat(dfs, ignore_index=True)
-    print(f"Loaded {len(data):,} records")
+    print(f"Loading data from: {DATA_PATH}")
+    data = pd.read_parquet(DATA_PATH)
+    print(f"Loaded {len(data):,} records from {len(parquet_files)} Parquet file(s)")
     
     return data
 
@@ -134,12 +86,6 @@ def load_gold_data() -> pd.DataFrame:
 def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     """
     Prepare features and target for training.
-    
-    Args:
-        df: Raw dataframe from Gold layer
-        
-    Returns:
-        Tuple of (X features DataFrame, y target Series)
     """
     # Select only the columns we need
     feature_cols = NUMERIC_FEATURES + CATEGORICAL_FEATURES
@@ -178,13 +124,6 @@ def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 def train_models(X_train: np.ndarray, y_train: pd.Series, X_test: np.ndarray, y_test: pd.Series) -> dict:
     """
     Train multiple regression models with hyperparameter tuning.
-        
-    Args:
-        X_train, y_train: Training data
-        X_test, y_test: Test data for evaluation
-        
-    Returns:
-        Dictionary with best model info and all results
     """
     models_config = [
         {
@@ -198,8 +137,8 @@ def train_models(X_train: np.ndarray, y_train: pd.Series, X_test: np.ndarray, y_
             "name": "RandomForest",
             "model": RandomForestRegressor(random_state=42, n_jobs=-1),
             "params": {
-                "n_estimators": [50, 100],
-                "max_depth": [10, 20, None],
+                "n_estimators": [50, 100, 150],
+                "max_depth": [10, 15, 20, None],
                 "min_samples_split": [2, 5]
             }
         },
@@ -207,9 +146,9 @@ def train_models(X_train: np.ndarray, y_train: pd.Series, X_test: np.ndarray, y_
             "name": "GradientBoosting",
             "model": GradientBoostingRegressor(random_state=42),
             "params": {
-                "n_estimators": [50, 100],
-                "max_depth": [3, 5],
-                "learning_rate": [0.05, 0.1]
+                "n_estimators": [50, 100, 150],
+                "max_depth": [3, 5, 7, 10],
+                "learning_rate": [0.05, 0.1, 0.2]
             }
         }
     ]
@@ -222,7 +161,7 @@ def train_models(X_train: np.ndarray, y_train: pd.Series, X_test: np.ndarray, y_
         print(f"Training: {config['name']}")
         print(f"{'='*50}")
         
-        # Grid Search with 3-fold CV (same as Spark version)
+        # Grid Search with 3-fold CV 
         grid_search = GridSearchCV(
             estimator=config["model"],
             param_grid=config["params"],
@@ -271,17 +210,16 @@ def train_models(X_train: np.ndarray, y_train: pd.Series, X_test: np.ndarray, y_
                 "predictions": y_pred
             }
         
-        # Log to MLflow if available
-        if MLFLOW_AVAILABLE:
-            with mlflow.start_run(run_name=f"sklearn_{config['name']}"):
-                mlflow.log_params(grid_search.best_params_)
-                mlflow.log_metrics({"rmse": rmse, "r2": r2, "mae": mae})
-                mlflow.sklearn.log_model(best_model, "model")
-                mlflow.set_tags({
-                    "model_family": config["name"],
-                    "framework": "sklearn",
-                    "cv_folds": 3
-                })
+        # Log to MLflow 
+        with mlflow.start_run(run_name=f"sklearn_{config['name']}"):
+            mlflow.log_params(grid_search.best_params_)
+            mlflow.log_metrics({"rmse": rmse, "r2": r2, "mae": mae})
+            mlflow.sklearn.log_model(best_model, "model")
+            mlflow.set_tags({
+                "model_family": config["name"],
+                "framework": "sklearn",
+                "cv_folds": 3
+            })
     
     return {"best": best_model_info, "all_results": results}
 
@@ -384,57 +322,36 @@ def save_model_artifacts(
 ):
     """
     Save all model artifacts needed for production inference.
-    
-    Artifacts:
-    - champion_model.pkl: The trained sklearn model
-    - feature_transformer.pkl: Fitted preprocessing pipeline
-    - model_metadata.json: Version, metrics, feature names (with MLOps metadata)
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Save model
     model_path = output_dir / "champion_model.pkl"
     joblib.dump(model, model_path)
-    print(f"✓ Model saved: {model_path}")
+    print(f"Model saved: {model_path}")
     
     # Save transformer
     transformer_path = output_dir / "feature_transformer.pkl"
     joblib.dump(transformer, transformer_path)
-    print(f"✓ Transformer saved: {transformer_path}")
+    print(f"Transformer saved: {transformer_path}")
     
-    # Create metadata with enhanced versioning if available
-    if VERSIONING_AVAILABLE:
-        version_manager = ModelVersionManager()
-        metadata = version_manager.create_version_metadata(
-            model_type=metrics["name"],
-            metrics=metrics,
-            training_samples=training_samples,
-            data_path=data_path,
-            bump="patch",
-            description=f"Auto-trained {metrics['name']} model",
-            tags=["auto-trained"]
-        )
-        # Add feature information
-        metadata["feature_names"] = transformer.get_feature_names()
-        metadata["numeric_features"] = NUMERIC_FEATURES
-        metadata["categorical_features"] = CATEGORICAL_FEATURES
-        print(f" Enhanced versioning: v{metadata['semantic_version']}")
-    else:
-        # Fallback to basic metadata
-        metadata = {
-            "version": datetime.now().strftime("%Y%m%d_%H%M%S"),
-            "model_type": metrics["name"],
-            "metrics": {
-                "rmse": round(metrics["rmse"], 2),
-                "r2": round(metrics["r2"], 4),
-                "mae": round(metrics.get("mae", 0), 2)
-            },
-            "feature_names": transformer.get_feature_names(),
-            "numeric_features": NUMERIC_FEATURES,
-            "categorical_features": CATEGORICAL_FEATURES,
-            "training_date": datetime.now().isoformat(),
-            "threshold_passed": metrics["rmse"] < RMSE_THRESHOLD and metrics["r2"] > R2_THRESHOLD
-        }
+    # Create metadata with versioning
+    version_manager = ModelVersionManager()
+    metadata = version_manager.create_version_metadata(
+        model_type=metrics["name"],
+        metrics=metrics,
+        training_samples=training_samples,
+        data_path=data_path,
+        bump="patch",
+        description=f"Auto-trained {metrics['name']} model",
+        tags=["auto-trained"]
+    )
+    # Add feature information
+    metadata["feature_names"] = transformer.get_feature_names()
+    metadata["numeric_features"] = NUMERIC_FEATURES
+    metadata["categorical_features"] = CATEGORICAL_FEATURES
+    print(f" Enhanced versioning: v{metadata['semantic_version']}")
+    
     
     metadata_path = output_dir / "model_metadata.json"
     with open(metadata_path, 'w') as f:
@@ -468,9 +385,8 @@ def main():
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     
     # Setup MLflow
-    if MLFLOW_AVAILABLE:
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     
     # 1. Load data
     print("\n[1/5] Loading Gold layer data...")
@@ -512,7 +428,7 @@ def main():
     
     # Check thresholds
     if best["rmse"] < RMSE_THRESHOLD and best["r2"] > R2_THRESHOLD:
-        print(f"\n✓ Model PASSED quality thresholds")
+        print(f"\n Model PASSED quality thresholds")
         print(f"  RMSE < €{RMSE_THRESHOLD:,}: ✓")
         print(f"  R² > {R2_THRESHOLD}: ✓")
     else:
