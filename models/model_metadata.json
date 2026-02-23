@@ -1,10 +1,55 @@
 {
-  "version": "20260127_181012",
+  "version": "1.0.1",
+  "version_id": "20260223_210355",
+  "semantic_version": "1.0.1",
   "model_type": "RandomForest",
+  "description": "Auto-trained RandomForest model",
+  "tags": [
+    "auto-trained"
+  ],
   "metrics": {
-    "rmse": 116745.84,
-    "r2": 0.9063,
-    "mae": 62198.75
+    "rmse": 63015.51,
+    "r2": 0.9701,
+    "mae": 33698.07,
+    "mape": null
+  },
+  "training": {
+    "date": "2026-02-23T21:03:55.957662",
+    "samples": 4478,
+    "data_hash": "e3b0c44298fc1c14"
+  },
+  "lineage": {
+    "parent_version": null,
+    "created_from": "train_sklearn.py"
+  },
+  "git": {
+    "commit_hash": "3af94ed2dad50a0df80156e0ec6d1ed2200a6516",
+    "commit_short": "3af94ed2",
+    "branch": "main",
+    "author": "Nicolas-Villoria",
+    "commit_date": "2026-02-23 21:01:32 +0100",
+    "is_dirty": true,
+    "remote_url": "https://github.com/Nicolas-Villoria/Lil-Homie-BCN.git"
+  },
+  "environment": {
+    "python_version": "3.11.5",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "machine": "arm64",
+    "hostname": "Nicolass-MacBook-Pro-2.local",
+    "packages": {
+      "scikit-learn": "1.5.0",
+      "pandas": "2.3.3",
+      "numpy": "1.26.4",
+      "joblib": "1.4.0",
+      "fastapi": "0.129.0",
+      "uvicorn": "0.41.0",
+      "pydantic": "2.12.5"
+    }
+  },
+  "validation": {
+    "rmse_threshold": 150000,
+    "r2_threshold": 0.7,
+    "threshold_passed": true
   },
   "feature_names": [
     "size",
@@ -27,7 +72,5 @@
     "neighborhood",
     "propertyType",
     "district"
-  ],
-  "training_date": "2026-01-27T18:10:12.667997",
-  "threshold_passed": true
+  ]
 }
