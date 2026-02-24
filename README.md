@@ -290,7 +290,6 @@ Feature importance analysis shows property size and neighborhood as the stronges
 
 ## Future Improvements
 
-- SHAP explainability for individual predictions
 - Automated data refresh pipeline with Idealista API integration
 - Data drift detection and alerting
 - A/B testing infrastructure for model comparison

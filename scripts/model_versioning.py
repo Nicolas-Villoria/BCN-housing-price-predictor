@@ -15,7 +15,7 @@ import json
 import os
 import platform
 import subprocess
-import sys
+import importlib.metadata
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -72,8 +72,8 @@ class ModelVersionManager:
             "commit_short": None,
             "branch": None,
             "author": None,
-            "commit_date": None,
-            "is_dirty": None,
+            "commit_date": "",
+            "is_dirty": False,
             "remote_url": None
         }
         
@@ -151,7 +151,6 @@ class ModelVersionManager:
         
         for pkg in packages_to_check:
             try:
-                import importlib.metadata
                 env_info["packages"][pkg] = importlib.metadata.version(pkg)
             except Exception:
                 pass
@@ -214,7 +213,7 @@ class ModelVersionManager:
         parent_version: Optional[str] = None,
         bump: str = "patch",
         description: str = "",
-        tags: list = None
+        tags: list = []
     ) -> dict:
         """
         Create comprehensive version metadata.
@@ -303,7 +302,7 @@ class ModelVersionManager:
         self,
         version: str,
         environment: str = "production",
-        deployed_by: str = None,
+        deployed_by: str = "User",
         notes: str = ""
     ):
         """

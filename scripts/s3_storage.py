@@ -1,33 +1,11 @@
-#!/usr/bin/env python3
 """
-s3_storage.py
------------------------
 AWS S3 Storage for Model Artifacts
 
-This module provides S3 integration for model artifact storage, enabling:
+Provides S3 integration for model artifact storage, enabling:
 - Upload models to S3 after training
 - Download models from S3 for deployment
 - List available model versions in S3
 - Sync local and remote model storage
-
-Environment Variables Required:
-    AWS_ACCESS_KEY_ID     : Your AWS access key
-    AWS_SECRET_ACCESS_KEY : Your AWS secret key
-    AWS_REGION            : AWS region (default: eu-west-1)
-    S3_BUCKET_NAME        : S3 bucket name (default: bcn-rental-models)
-
-Usage:
-    # Upload current model
-    python scripts/s3_storage.py upload
-    
-    # Download specific version
-    python scripts/s3_storage.py download --version 1.0.0
-    
-    # List all versions in S3
-    python scripts/s3_storage.py list
-    
-    # Sync (upload if local is newer)
-    python scripts/s3_storage.py sync
 """
 
 import argparse
@@ -109,19 +87,19 @@ class S3ModelStorage:
             
             # Test connection
             self.s3_client.head_bucket(Bucket=self.bucket_name)
-            print(f"✅ Connected to S3 bucket: {self.bucket_name}")
+            print(f" Connected to S3 bucket: {self.bucket_name}")
             
         except ImportError:
-            print("❌ boto3 not installed. Run: pip install boto3")
+            print(" boto3 not installed. Run: pip install boto3")
             self.s3_client = None
         except Exception as e:
-            print(f"⚠️  S3 connection warning: {e}")
+            print(f" S3 connection warning: {e}")
             # Don't fail - allow offline operation
-    
+
     def is_connected(self) -> bool:
         """Check if S3 client is properly connected."""
         return self.s3_client is not None
-    
+
     def _get_local_version(self) -> Optional[str]:
         """Get the version of the local model."""
         metadata_path = self.models_dir / "model_metadata.json"
@@ -135,7 +113,7 @@ class S3ModelStorage:
             return metadata.get("version") or metadata.get("semantic_version")
         except Exception:
             return None
-    
+
     def upload_model(
         self,
         version: str = None,
@@ -143,23 +121,16 @@ class S3ModelStorage:
     ) -> bool:
         """
         Upload model artifacts to S3.
-        
-        Args:
-            version: Version tag (defaults to local model version)
-            force: Overwrite existing version in S3
-            
-        Returns:
-            True if successful, False otherwise
         """
         if not self.is_connected():
-            print("❌ S3 client not connected")
+            print(" S3 client not connected")
             return False
         
         # Get version from local metadata if not provided
         version = version or self._get_local_version()
         if not version:
             version = datetime.now().strftime("%Y%m%d_%H%M%S")
-            print(f"⚠️  No version found, using timestamp: {version}")
+            print(f" No version found, using timestamp: {version}")
         
         s3_version_prefix = f"{S3_PREFIX}{version}/"
         
@@ -172,12 +143,12 @@ class S3ModelStorage:
                     MaxKeys=1
                 )
                 if response.get("KeyCount", 0) > 0:
-                    print(f"⚠️  Version {version} already exists in S3. Use --force to overwrite.")
+                    print(f"  Version {version} already exists in S3. Use --force to overwrite.")
                     return False
             except Exception:
                 pass  # Continue if check fails
         
-        print(f"\n📤 Uploading model v{version} to S3...")
+        print(f"\n Uploading model v{version} to S3...")
         print(f"   Bucket: {self.bucket_name}")
         print(f"   Prefix: {s3_version_prefix}")
         
@@ -186,7 +157,7 @@ class S3ModelStorage:
             local_path = self.models_dir / filename
             
             if not local_path.exists():
-                print(f"   ⚠️  {filename} not found, skipping")
+                print(f"    {filename} not found, skipping")
                 continue
             
             s3_key = f"{s3_version_prefix}{filename}"
@@ -204,14 +175,14 @@ class S3ModelStorage:
                         }
                     }
                 )
-                print(f"   ✅ Uploaded {filename}")
+                print(f"    Uploaded {filename}")
                 uploaded += 1
             except Exception as e:
-                print(f"   ❌ Failed to upload {filename}: {e}")
+                print(f"    Failed to upload {filename}: {e}")
         
         # Also upload to "latest" folder
         if uploaded > 0:
-            print(f"\n📤 Updating 'latest' pointer...")
+            print(f"\n Updating 'latest' pointer...")
             for filename in MODEL_FILES:
                 local_path = self.models_dir / filename
                 if local_path.exists():
@@ -224,61 +195,12 @@ class S3ModelStorage:
                     except Exception:
                         pass
             
-            print(f"\n✅ Successfully uploaded {uploaded} files to S3")
+            print(f"\n Successfully uploaded {uploaded} files to S3")
             return True
         
         return False
     
-    def download_model(
-        self,
-        version: str = "latest",
-        output_dir: Path = None
-    ) -> bool:
-        """
-        Download model artifacts from S3.
-        
-        Args:
-            version: Version to download (or "latest")
-            output_dir: Directory to save files (defaults to models_dir)
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if not self.is_connected():
-            print("❌ S3 client not connected")
-            return False
-        
-        output_dir = output_dir or self.models_dir
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        s3_version_prefix = f"{S3_PREFIX}{version}/"
-        
-        print(f"\n📥 Downloading model v{version} from S3...")
-        print(f"   Bucket: {self.bucket_name}")
-        print(f"   Prefix: {s3_version_prefix}")
-        
-        downloaded = 0
-        for filename in MODEL_FILES:
-            s3_key = f"{s3_version_prefix}{filename}"
-            local_path = output_dir / filename
-            
-            try:
-                self.s3_client.download_file(
-                    self.bucket_name,
-                    s3_key,
-                    str(local_path)
-                )
-                print(f"   ✅ Downloaded {filename}")
-                downloaded += 1
-            except Exception as e:
-                print(f"   ❌ Failed to download {filename}: {e}")
-        
-        if downloaded > 0:
-            print(f"\n✅ Successfully downloaded {downloaded} files from S3")
-            return True
-        
-        return False
-    
+
     def list_versions(self) -> List[dict]:
         """
         List all model versions available in S3.
@@ -287,7 +209,7 @@ class S3ModelStorage:
             List of version info dicts
         """
         if not self.is_connected():
-            print("❌ S3 client not connected")
+            print("  S3 client not connected")
             return []
         
         versions = []
@@ -333,7 +255,7 @@ class S3ModelStorage:
                         })
             
         except Exception as e:
-            print(f"❌ Failed to list versions: {e}")
+            print(f"  Failed to list versions: {e}")
         
         # Sort by version
         versions.sort(key=lambda x: x["version"], reverse=True)
@@ -342,14 +264,11 @@ class S3ModelStorage:
     def sync(self) -> bool:
         """
         Sync local model to S3 if it's newer or different.
-        
-        Returns:
-            True if upload performed, False otherwise
         """
         local_version = self._get_local_version()
         
         if not local_version:
-            print("❌ No local model found to sync")
+            print("  No local model found to sync")
             return False
         
         # Check if version exists in S3
@@ -357,10 +276,10 @@ class S3ModelStorage:
         existing_versions = [v["version"] for v in versions]
         
         if local_version in existing_versions:
-            print(f"✅ Version {local_version} already in S3, no sync needed")
+            print(f" Version {local_version} already in S3, no sync needed")
             return False
         
-        print(f"📤 Syncing new version {local_version} to S3...")
+        print(f"  Syncing new version {local_version} to S3...")
         return self.upload_model(local_version)
 
 
@@ -373,7 +292,7 @@ def cmd_upload(args):
     storage = S3ModelStorage()
     
     if not storage.is_connected():
-        print("\n❌ Cannot connect to S3. Check your AWS credentials.")
+        print("\n Cannot connect to S3. Check your AWS credentials.")
         print("\nRequired environment variables:")
         print("  AWS_ACCESS_KEY_ID")
         print("  AWS_SECRET_ACCESS_KEY")
@@ -388,34 +307,18 @@ def cmd_upload(args):
     return 0 if success else 1
 
 
-def cmd_download(args):
-    """Download model from S3."""
-    storage = S3ModelStorage()
-    
-    if not storage.is_connected():
-        print("\n❌ Cannot connect to S3. Check your AWS credentials.")
-        return 1
-    
-    success = storage.download_model(version=args.version)
-    
-    if success:
-        print("\n⚠️  Remember to restart the API to load the new model!")
-    
-    return 0 if success else 1
-
-
 def cmd_list(args):
     """List versions in S3."""
     storage = S3ModelStorage()
     
     if not storage.is_connected():
-        print("\n❌ Cannot connect to S3. Check your AWS credentials.")
+        print("\n Cannot connect to S3. Check your AWS credentials.")
         return 1
     
     versions = storage.list_versions()
     
     print("\n" + "="*70)
-    print("📦 S3 MODEL VERSIONS")
+    print(" S3 MODEL VERSIONS")
     print(f"   Bucket: {storage.bucket_name}")
     print("="*70)
     
@@ -445,7 +348,7 @@ def cmd_sync(args):
     storage = S3ModelStorage()
     
     if not storage.is_connected():
-        print("\n❌ Cannot connect to S3. Check your AWS credentials.")
+        print("\n Cannot connect to S3. Check your AWS credentials.")
         return 1
     
     success = storage.sync()
@@ -470,8 +373,6 @@ Environment Variables:
 Examples:
   python scripts/s3_storage.py upload              # Upload current model
   python scripts/s3_storage.py upload --force      # Overwrite existing
-  python scripts/s3_storage.py download            # Download latest
-  python scripts/s3_storage.py download -v 1.0.0   # Download specific
   python scripts/s3_storage.py list                # List all versions
   python scripts/s3_storage.py sync                # Sync if newer
         """
@@ -484,11 +385,6 @@ Examples:
     upload_parser.add_argument("-v", "--version", help="Version tag (defaults to local version)")
     upload_parser.add_argument("-f", "--force", action="store_true", help="Overwrite existing version")
     upload_parser.set_defaults(func=cmd_upload)
-    
-    # Download command
-    download_parser = subparsers.add_parser("download", help="Download model from S3")
-    download_parser.add_argument("-v", "--version", default="latest", help="Version to download")
-    download_parser.set_defaults(func=cmd_download)
     
     # List command
     list_parser = subparsers.add_parser("list", help="List versions in S3")

@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 """
-validate_model.py
------------------------
 Model Validation Script for CI/CD Pipeline
 
 This script validates a trained model against quality thresholds before deployment.

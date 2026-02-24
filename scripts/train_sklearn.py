@@ -54,8 +54,8 @@ MLFLOW_EXPERIMENT_NAME = "bda_project_sklearn"
 MLFLOW_TRACKING_URI = f"file:{PROJECT_ROOT / 'mlruns'}"
 
 # Model thresholds 
-RMSE_THRESHOLD = 150000  # Maximum acceptable RMSE (€)
-R2_THRESHOLD = 0.6       # Minimum acceptable R²
+RMSE_THRESHOLD = 100000  # Maximum acceptable RMSE (€)
+R2_THRESHOLD = 0.8       # Minimum acceptable R²
 
 # Target column
 TARGET = "price"

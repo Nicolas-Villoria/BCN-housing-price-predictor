@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
 """
-rollback_model.py
------------------------
 Model Rollback Script for Production Recovery
 
-This script allows quick rollback to a previous model version when issues
-are detected in production. It maintains a history of model versions and
+Allows quick rollback to a previous model version when issues are 
+detected in production. Maintains a history of model versions and
 can restore any previous version.
 
 Features:
@@ -14,25 +11,6 @@ Features:
 - Rollback to the previous version (N-1)
 - Automatic backup of current model before rollback
 - Validation of restored model
-
-Usage:
-    python scripts/rollback_model.py list              # List available versions
-    python scripts/rollback_model.py rollback          # Rollback to previous version
-    python scripts/rollback_model.py rollback v1.2.3   # Rollback to specific version
-    python scripts/rollback_model.py backup            # Backup current model
-
-Directory Structure:
-    models/
-    ├── champion_model.pkl          # Current production model
-    ├── feature_transformer.pkl     # Current transformer
-    ├── model_metadata.json         # Current metadata
-    └── versions/                   # Version history
-        ├── 20260127_181012/
-        │   ├── champion_model.pkl
-        │   ├── feature_transformer.pkl
-        │   └── model_metadata.json
-        └── 20260201_143022/
-            └── ...
 """
 
 import argparse
@@ -86,9 +64,6 @@ def get_current_version() -> str:
 def list_versions() -> list:
     """
     List all available model versions.
-    
-    Returns:
-        List of version info dicts sorted by date (newest first)
     """
     ensure_versions_dir()
     
@@ -138,9 +113,6 @@ def list_versions() -> list:
 def backup_current_model() -> str|None:
     """
     Backup the current production model to the versions directory.
-    
-    Returns:
-        Version string of the backed up model
     """
     ensure_versions_dir()
     
@@ -182,12 +154,6 @@ def backup_current_model() -> str|None:
 def restore_version(version: str) -> bool:
     """
     Restore a specific model version to production.
-    
-    Args:
-        version: Version string to restore
-        
-    Returns:
-        True if successful, False otherwise
     """
     version_dir = VERSIONS_DIR / version
     
@@ -228,9 +194,6 @@ def restore_version(version: str) -> bool:
 def rollback_to_previous() -> bool:
     """
     Rollback to the previous model version (N-1).
-    
-    Returns:
-        True if successful, False otherwise
     """
     versions = list_versions()
     current = get_current_version()
@@ -256,13 +219,9 @@ def cmd_list(args):
     """List all available model versions."""
     versions = list_versions()
     current = get_current_version()
-    
-    print("\n" + "="*70)
-    print("📦 MODEL VERSION HISTORY")
-    print("="*70)
-    print(f"\n🎯 Current Production: {current}")
+
+    print(f"Current Production: {current}")
     print(f"\n{'Version':<20} {'Type':<15} {'R²':<8} {'RMSE':<12} {'Date'}")
-    print("-"*70)
     
     if not versions:
         print("   No versions found in history")
@@ -288,20 +247,20 @@ def cmd_list(args):
 
 def cmd_backup(args):
     """Backup current production model."""
-    print("\n📦 BACKUP CURRENT MODEL")
+    print("\nBACKUP CURRENT MODEL")
     print("-"*40)
     
     version = backup_current_model()
     
     if version:
-        print(f"\n✅ Backup complete: {version}")
+        print(f"\nBackup complete: {version}")
         return 0
     return 1
 
 
 def cmd_rollback(args):
     """Rollback to a previous version."""
-    print("\n🔄 MODEL ROLLBACK")
+    print("\nMODEL ROLLBACK")
     print("-"*40)
     
     current = get_current_version()
@@ -313,7 +272,7 @@ def cmd_rollback(args):
         print(f"Target version: {target}")
         
         if target == current:
-            print("⚠️  Target version is the same as current. No rollback needed.")
+            print(" Target version is the same as current. No rollback needed.")
             return 0
         
         success = restore_version(target)
@@ -324,15 +283,15 @@ def cmd_rollback(args):
     
     if success:
         print("\n" + "="*40)
-        print("🎉 ROLLBACK SUCCESSFUL")
+        print(" ROLLBACK SUCCESSFUL")
         print("="*40)
-        print("\n⚠️  Remember to:")
+        print("\n Remember to:")
         print("   1. Restart the API service")
         print("   2. Verify predictions are working")
         print("   3. Monitor for any issues")
         return 0
     else:
-        print("\n❌ ROLLBACK FAILED")
+        print("\n ROLLBACK FAILED")
         return 1
 
 
